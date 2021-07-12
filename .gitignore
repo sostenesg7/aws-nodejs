@@ -105,3 +105,4 @@ dist
 
 new_user_credentials.csv
 tmp/
+.history

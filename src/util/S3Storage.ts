@@ -12,8 +12,10 @@ import {
   PutObjectCommandInput,
   GetObjectCommand,
   GetObjectCommandInput,
+  SelectObjectContentEventStream,
 } from '@aws-sdk/client-s3';
-import { S3RequestPresigner, S3RequestPresignerOptions, getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { Readable } from 'stream';
 class S3Storage {
   private client: S3Client;
 
@@ -25,36 +27,42 @@ class S3Storage {
     this.client = new S3Client(config);
   }
 
-  async saveFile(fileName: string): Promise<void> {
+  async saveFile(fileName: string): Promise<string | undefined> {
     const filePath = path.join('tmp', fileName);
     const contentType = mime.getType(filePath) as string;
-
+    const fileKey = `${uuidv4()}_${fileName}`;
     try {
       const file = await fs.readFile(filePath);
       const input: PutObjectCommandInput = {
         Bucket: String(process.env.AWS_BUCKET_NAME),
-        Key: `${uuidv4()}_${fileName}`,
+        Key: fileKey,
         ContentType: contentType,
         ACL: AWS_ACL.PRIVATE,
         Body: file,
       };
       const command = new PutObjectCommand(input);
-      const response = await this.client.send(command);
-      console.log(response.ETag);
+      await this.client.send(command);
+      return this.getSignedUrl(fileKey);
       // fs.unlink()
     } catch (error) {
       console.error(error);
     }
   }
 
-  async getFileStream(fileName: string, res: Response): Promise<undefined> {
-    return undefined;
-  }
-
-  async getSignedUrl(fileName: string): Promise<string | undefined> {
+  async getFileStream(fileKey: string, res: Response): Promise<void> {
     const input: GetObjectCommandInput = {
       Bucket: String(process.env.AWS_BUCKET_NAME),
-      Key: fileName,
+      Key: fileKey,
+    };
+    const command = new GetObjectCommand(input);
+    const readable = (await this.client.send(command)).Body as Readable;
+    readable.pipe(res);
+  }
+
+  async getSignedUrl(fileKey: string): Promise<string | undefined> {
+    const input: GetObjectCommandInput = {
+      Bucket: String(process.env.AWS_BUCKET_NAME),
+      Key: fileKey,
     };
     const command = new GetObjectCommand(input);
     const signedUrl = await getSignedUrl(

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import uploadManager from '../../util/UploadManager';
 import S3Storage from '../../util/S3Storage';
 
 const router = Router();
@@ -10,6 +11,10 @@ router.get('/stream/:fileName', async (req, res) => {
 
 router.get('/url/:fileName', async (req, res) => {
   res.send(await storage.getSignedUrl(req.params.fileName));
+});
+
+router.post('/', uploadManager.single('file'), (req, res, next) => {
+  res.send('Upload success');
 });
 
 export default router;
