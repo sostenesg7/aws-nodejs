@@ -102,3 +102,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+new_user_credentials.csv
+tmp/
