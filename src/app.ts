@@ -11,6 +11,6 @@ app.get('/test', (req, res) => {
   res.send('ok')
 })
 
-storage.saveFile('image.png');
+// storage.saveFile('image.png');
 
 app.listen(3000, () => console.log('SERVER STARTED AT PORT 3000'));

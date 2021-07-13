@@ -16,6 +16,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'stream';
+
 class S3Storage {
   private client: S3Client;
 
@@ -39,6 +40,27 @@ class S3Storage {
         ContentType: contentType,
         ACL: AWS_ACL.PRIVATE,
         Body: file,
+      };
+      const command = new PutObjectCommand(input);
+      await this.client.send(command);
+      return this.getSignedUrl(fileKey);
+      // fs.unlink()
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async uploadFileFromStream(fileName: string, stream: Readable): Promise<string | undefined> {
+    const filePath = path.join('tmp', fileName);
+    const contentType = mime.getType(filePath) as string;
+    const fileKey = `${uuidv4()}_${fileName}`;
+    try {
+      const input: PutObjectCommandInput = {
+        Bucket: String(process.env.AWS_BUCKET_NAME),
+        Key: fileKey,
+        ContentType: contentType,
+        ACL: AWS_ACL.PRIVATE,
+        Body: stream,
       };
       const command = new PutObjectCommand(input);
       await this.client.send(command);
